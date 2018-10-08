@@ -1,0 +1,127 @@
+10 clear:mode 0:border 0: ink 0,0
+16 for t=1 to 100:call &BD19:next
+18 symbol after 240
+20 mx%=20:my%=11:DIM map%(mx%,my%):moves%=0:dead%=0:dopen%=0
+25 SYMBOL 241,&X00000000,&X00000000,&X00100000,&X11111110,&X11111111,&X00100000,&X00000000,&X00000000 'sword scene
+28 SYMBOL 242,&X00001100,&X00111100,&X00001100,&X00111100,&X00001100,&X00110110,&X01000011,&X00111110 'key
+29 SYMBOL 243,&X00000000,&X00000000,&X00000000,&X11111111,&X00110000,&X00000000,&X00000000,&X00000000 'door
+30 SYMBOL 245,&X00000000,&X00001000,&X00011000,&X00011000,&X00011000,&X00111100,&X00011000,&X00000000 'sword game
+35 SYMBOL 253,&X01011010,&X00111100,&X01111110,&X10011001,&X10011001,&X00100100,&X00100100,&X01100110 'monster
+38 SYMBOL 254,&X00011000,&X00011000,&X00111100,&X01011010,&X01011010,&X00100100,&X00100100,&X01100110 'player
+40 SYMBOL 255,&X10111110,&X11001010,&X10110010,&X10000100,&X01010010,&X10100010,&X11011100,&X00000000 'wall
+41 'ofx or ofy = offet of deleted tiles - evx or evy  = enemy speed x or y
+45 OUT &BC00,0:OUT &BD00,127:OUT &BC00,4:OUT &BD00,18:OUT &BC00,5:OUT &BD00,15:OUT &BC00,6:OUT &BD00,15:OUT &BC00,7:OUT &BD00,17
+
+99 'HOME
+100 locate 1,1:pen 4:Print "Castle Dungeon"
+105 locate 1,2:Print "(C)2018 RetroAcademy"
+108 locate 1,4: pen 1: print CHR$(231);:print " = One coin"
+110 locate 1,5: pen 1: print CHR$(245);:print " = Sword"
+112 locate 1,6: pen 4: print CHR$(242);:print " = Key"
+113 locate 1,7: pen 8: print CHR$(243);:print " = Door"
+115 locate 1,9:pen 4:print "Moves used: ";moves%:
+120 locate 1,10:pen 4:print "Dead: ";dead%
+130 locate 1,12: pen 4: print "enter in the Castle"
+140 CLEAR INPUT: call &bb06 'Wait a char
+150 t2=0:t=0:x%=0:y%=0:vecx%=0:vecy%=0:cx%=3:cy%=3:movx%=1:movy%=1:ofx%=0:ofx%=0:bns%=0:pow%=0:ex%=8:ey%=1:evx%=0.5
+180 cls: goto 400
+
+400 locate 1,14:pen 4:Print "Dead: ":PEN 1:locate 12,14:print CHR$(231);:locate 16,14:print CHR$(245);:locate 1,15:pen 8:Print "Moves: "
+420 'EVERY 15,3 GOSUB 8050 'Start Enemies
+450 gosub 3000:gosub 2000
+500 while 1 'Main Loop
+515 gosub 8035
+520 t2=TIME/300
+525 WHILE t2>t:t=TIME/300.1:WEND
+550 IF NOT(INKEY(1)) AND (movx%<18) AND NOT(map%(1+movx%+1,1+movy%)=1) THEN vecy%=0: vecx%=1:gosub 2000:ofx%=-5:gosub 7000
+560 IF NOT(INKEY(8)) AND (movx%>0) AND NOT(map%(1+movx%-1,1+movy%)=1) THEN vecy%=0: vecx%=-1:gosub 2000:ofx%=-1:gosub 7000
+570 IF NOT(INKEY(0)) AND (movy%>0) AND (NOT(map%(1+movx%,1+movy%-1)=1) AND NOT(map%(1+movx%,1+movy%-1)=7)) THEN vecx%=0:vecy%=-1:gosub 2000:ofy%=-1:gosub 8000
+580 IF NOT(INKEY(2)) AND (movy%<9) AND (NOT(map%(1+movx%,1+movy%+1)=1) AND NOT(map%(1+movx%,1+movy%+1)=7)) THEN vecx%=0:vecy%=1:gosub 2000:ofy%=-5:gosub 8000
+700 wend
+
+2000 'Camera Clipping
+2002 moves%=moves%+1
+2005 locate 1+movx%,1+movy%:map%(1+movx%,1+movy%)=0:print " ";:movx%=movx%+vecx%:movy%=movy%+vecy% 'Player control
+2008 IF map%(1+movx%,1+movy%)=3 then map%(1+movx%,1+movy%)=0 : print " ";:bns%=bns%+1:SOUND 1,100,5,15 'Bonus coin
+2009 IF map%(1+movx%,1+movy%)=6 then map%(1+movx%,1+movy%)=0 : print " ";:map%(2,5)=0:dopen%=1:SOUND 1,30,10,15 'Bonus coin
+2010 IF map%(1+movx%,1+movy%)=5 then map%(1+movx%,1+movy%)=0 : print " ";:pow%=pow%+1:SOUND 1,200,5,15 'Bonus power
+2012 IF map%(1+movx%,1+movy%)=4 AND pow%=0 THEN gosub 9100 else if map%(1+movx%,1+movy%)=4 AND pow%>0 then gosub 9000:map%(1+movx%,1+movy%)=0:pow%=pow%-1:locate 1+movx%,1+movy%
+2018 if bns%=8 then gosub 11000 'Bonus WIN!
+2020 sound 1,900,1,15,1:locate 1+movx%,1+movy%:map%(1+movx%,1+movy%)=9:pen 4:PRINT CHR$(254);: 'Player
+2025 x2%=movx%:y2%=movy%
+2040 FOR y%=1 TO cy%
+2050 FOR x%=1 TO cx%
+2080 LOCATE (x%+movx%)-1,(y%+movy%)-1
+2085 IF map%(x2%,y2%)=1 THEN PEN 9: print CHR$(255);: 'Wall
+2088 IF map%(x2%,y2%)=6 THEN PEN 4: print CHR$(242);: 'key
+2089 IF map%(x2%,y2%)=7 THEN PEN 8: print CHR$(243);: 'door
+2090 IF map%(x2%,y2%)=3 THEN PEN 1: print CHR$(231);: 'Money
+2092 IF map%(x2%,y2%)=5 THEN PEN 1: print CHR$(245);: 'Power Sword
+2095 IF map%(x2%,y2%)=4 THEN PEN 3: print CHR$(253);: 'Eenemy
+2110 x2%=x2%+1
+2120 NEXT x%
+2130 y2%=y2%+1:x2%=movx%
+2150 NEXT y%
+2160 pen 4:locate 7,14:print dead%;:locate 7,15:print moves%;:locate 13,14:print bns%;:locate 17,14:pen 4:print pow%;: 'HUD
+2180 return
+
+3000 'map
+3010 restore 5000
+3050 for y%=1 to my%:for x%=1 to mx%
+3150 READ a%:map%(x%,y%)=a%:LOCATE x%,y%
+3250 NEXT x%:NEXT y%
+3350 RETURN
+
+5000 'Map Data
+5010 DATA 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+5100 DATA 1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,5,1,3,1
+5200 DATA 1,1,1,0,1,0,1,0,1,0,0,1,3,1,0,0,0,1,4,1
+5300 DATA 1,3,1,0,1,0,1,5,1,0,1,1,1,1,1,1,0,1,0,1
+5400 DATA 1,7,1,0,1,0,0,0,1,0,3,1,3,1,5,0,0,0,0,1
+5500 DATA 1,4,0,0,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,1
+5600 DATA 1,1,1,0,0,0,4,0,0,1,5,0,4,1,4,0,0,0,0,1
+5700 DATA 1,3,1,1,0,1,1,1,3,1,1,1,0,1,1,1,0,1,4,1
+5800 DATA 1,0,1,0,5,0,0,0,0,0,1,0,0,0,0,0,0,1,6,1
+5900 DATA 1,4,0,0,1,1,0,0,4,0,0,5,1,0,0,1,0,4,3,1
+6000 DATA 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+6999 'Clear camera Left-Right
+7000 FOR y%=1 TO cy%
+7010 LOCATE (x%+movx%)+ofx%,(y%+movy%)-1:print " ";:
+7020 NEXT y%
+7030 return
+
+7999 'Clear camera Top-Down
+8000 FOR x%=1 TO cx%
+8010 LOCATE (x%+movx%)-1,(y%+movy%)+ofy%:print " ";:
+8020 NEXT x%
+8030 return
+
+8035 'Enemies
+8050 sound 3,1000,2,5:locate ex%+evx%,ey%+1:map%(ex%,ey%+1)=0:print " ";:ex%=ex%+evx%:'SOUND 2,100,5,8,2,10,5
+8060 if map%(ex%+1,ey%+1)=1 OR map%(ex%-1,ey%+1)=1 then evx%=evx%*-1 'Enemy movement
+8065 if map%(ex%+evx%,ey%+1)=9 then SOUND 1,800,10,15,2,10,1:goto 100
+8070 map%(ex%+evx%,ey%+1)=2:locate ex%+evx%,ey%+1:PEN 8:print CHR$(253);:call &BD19
+8090 return
+
+8999 'fight scene win
+9000 for b%=1 to 13:for a%=1 to 20:locate a%,b%:print " ";:next:next
+9005 for a%=1 to 20:locate a%,6:pen 9:print CHR$(255);:next
+9010 locate 5,5:pen 4:PRINT CHR$(254);:locate 12,5: PEN 3: print CHR$(253);:
+9020 for a%=1 to 5:for w%=1 to 900:next:call &BD19:sound 1,500+a%*5,10,15:locate 5+a%,5:PEN 1: print " "+CHR$(241);:next
+9030 gosub 9990:SOUND 1,500,5,10,2,2
+9050 return
+
+9099 'fight scene dead
+9100 for b%=1 to 13:for a%=1 to 20:locate a%,b%:print " ";:next:next
+9105 for a%=1 to 20:locate a%,6:pen 9:print CHR$(255);:next
+9110 locate 5,5:pen 4:PRINT CHR$(254);:
+9120 for a%=1 to 6:for w%=1 to 900:next:call &BD19:sound 1,500+a%*10,10,15:PEN 3:locate 12-a%,5:print CHR$(253)+" ";:next
+9130 gosub 9990:SOUND 1,800,10,15,2,10,1:dead%=dead%+1:goto 100
+9150 return
+
+9990 for a%=1 to 20:locate a%,5:print " ";:next:for a%=1 to 20:locate a%,6:print " ";:next:return 'clear scene
+
+10000 'END GAME
+11000 cls: border 0: ink 0,0: pen 4:print "Moves used: ";moves%:print "Sir, You have saved the Castle and now your are a Legend for the Kingdom... but Zektrum is still alive... ": print"[ to be continued ]": print" "
+11100 CLEAR INPUT: call &bb06:cls:goto 100
